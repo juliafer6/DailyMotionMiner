@@ -1,5 +1,8 @@
 package aiss.dailymotionminer.etl;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import aiss.dailymotionminer.service.*;
@@ -10,11 +13,16 @@ import aiss.dailymotionminer.model.dailymotionminer.*;
 import aiss.dailymotionminer.model.videominer.*;
 
 @Component
-public class transformer {
+public class Transformer {
 
     @Autowired
     DailymotionService service;
 
+    private String convertirFecha(long unixTimestamp) {
+        return Instant.ofEpochSecond(unixTimestamp)
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
     public Channel buildChannel(String userId, Integer maxVideos, Integer maxComments) {
         DailymotionChannel dmChannel = service.getChannel(userId);
         if (dmChannel == null) return null;
@@ -25,7 +33,7 @@ public class transformer {
         // CORRECCIÓN: Usamos getScreenName() que es como está en tu modelo de Channel
         channel.setName(dmChannel.getScreenName());
         channel.setDescription(dmChannel.getDescription());
-        channel.setCreatedTime(dmChannel.getCreatedTime() != null ? dmChannel.getCreatedTime().toString() : null);
+        channel.setCreatedTime(dmChannel.getCreatedTime() != null ? convertirFecha(dmChannel.getCreatedTime()) : null);
 
         // Pasamos dmChannel entero para poder extraer la foto más adelante
         channel.setVideos(this.mapVideos(userId, maxVideos, dmChannel, maxComments));
@@ -50,7 +58,7 @@ public class transformer {
         video.setId(dmVideo.getId());
         video.setName(dmVideo.getTitle());
         video.setDescription(dmVideo.getDescription());
-        video.setReleaseTime(dmVideo.getCreatedTime() != null ? dmVideo.getCreatedTime().toString() : null);
+        video.setReleaseTime(dmVideo.getCreatedTime() != null ? convertirFecha(dmVideo.getCreatedTime()) : null);
 
         // --- MAPEO DEL AUTOR (User) ---
         User author = new User();

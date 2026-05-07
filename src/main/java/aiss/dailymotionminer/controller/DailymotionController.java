@@ -1,34 +1,46 @@
 package aiss.dailymotionminer.controller;
 
-import aiss.dailymotionminer.etl.transformer;
-import aiss.dailymotionminer.model.videominer.Channel; // Importante: usamos el modelo de VideoMiner
+import aiss.dailymotionminer.model.videominer.Channel;
 import aiss.dailymotionminer.service.DailymotionService;
+import aiss.dailymotionminer.etl.Transformer;
+import aiss.dailymotionminer.service.VideoMinerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import javax.xml.transform.Transformer;
-
 @RestController
-@RequestMapping("/dailymotionminer") // Cambiado para que coincida con Postman
+@RequestMapping("/dailymotionminer/channel")
 public class DailymotionController {
 
-    private final DailymotionService dailymotionService;
-    private final transformer mTransformer;
+    @Autowired
+    DailymotionService dailymotionService;
 
     @Autowired
-    public DailymotionController(DailymotionService dailymotionService, transformer mTransformer){
-        this.dailymotionService = dailymotionService;
-        this.mTransformer=mTransformer;
+    VideoMinerService videoMinerService;
+
+    @Autowired
+    Transformer transformer;
+
+    // POST - Obtiene canal de Dailymotion y lo envía a VideoMiner
+    @ResponseStatus(HttpStatus.CREATED)
+    @PostMapping("/{id}")
+    public Channel send(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "10") Integer maxVideos,
+            @RequestParam(defaultValue = "2") Integer maxComments) {
+
+        // Usamos el transformer igual que en Peertube
+        Channel channel = transformer.buildChannel(id, maxVideos, maxComments);
+        return videoMinerService.postChannel(channel);
     }
 
-    // Cambiado a GET y añadida la ruta /channel
-    @GetMapping("/channel/{name}")
-    public Channel getChannel(
-            @PathVariable String name,
-            @RequestParam(defaultValue = "10", required = false) Integer maxVideos,
-            @RequestParam(defaultValue = "10", required = false) Integer maxComments){
+    // GET - Solo para comprobar el JSON en local
+    @GetMapping("/{id}")
+    public Channel get(
+            @PathVariable String id,
+            @RequestParam(defaultValue="10") Integer maxVideos,
+            @RequestParam(defaultValue="2") Integer maxComments) {
 
-        // CORRECCIÓN: Pasamos 'dailymotionService' como cuarto parámetro
-        return mTransformer.buildChannel(name, maxVideos, maxComments);
+        return transformer.buildChannel(id, maxVideos, maxComments);
     }
 }
