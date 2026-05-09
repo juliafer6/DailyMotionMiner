@@ -1,5 +1,6 @@
 package aiss.dailymotionminer.controller;
 
+import aiss.dailymotionminer.exception.ChannelNotFoundException;
 import aiss.dailymotionminer.model.videominer.Channel;
 import aiss.dailymotionminer.service.DailymotionService;
 import aiss.dailymotionminer.etl.Transformer;
@@ -28,7 +29,7 @@ public class DailymotionController {
     public Channel send(
             @PathVariable String id,
             @RequestParam(defaultValue = "10") Integer maxVideos,
-            @RequestParam(defaultValue = "2") Integer maxComments) {
+            @RequestParam(defaultValue = "2") Integer maxComments) throws ChannelNotFoundException {
 
         // Usamos el transformer igual que en Peertube
         Channel channel = transformer.buildChannel(id, maxVideos, maxComments);
@@ -40,7 +41,7 @@ public class DailymotionController {
     public Channel get(
             @PathVariable String id,
             @RequestParam(defaultValue="10") Integer maxVideos,
-            @RequestParam(defaultValue="2") Integer maxComments) {
+            @RequestParam(defaultValue="2") Integer maxComments) throws ChannelNotFoundException {
 
         return transformer.buildChannel(id, maxVideos, maxComments);
     }
