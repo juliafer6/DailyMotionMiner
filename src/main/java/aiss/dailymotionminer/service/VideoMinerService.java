@@ -17,9 +17,11 @@ public class VideoMinerService {
     private String videominerUrl;
 
     public Channel postChannel(Channel channel){
+        // La dirección a la que vamos a enviar el canal
         String url = videominerUrl + "/videominer/api/channels";
 
         HttpHeaders headers = new HttpHeaders();
+        // Metemos la clave que el Interceptor está esperando
         headers.set("X-API-KEY", "trabajoAiss123");
 
         HttpEntity<Channel> request = new HttpEntity<>(channel, headers);
