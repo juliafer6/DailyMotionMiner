@@ -1,7 +1,4 @@
 package aiss.dailymotionminer.service;
-import aiss.dailymotionminer.model.dailymotionminer.DailymotionChannel;
-import aiss.dailymotionminer.model.dailymotionminer.DailymotionVideo;
-import aiss.dailymotionminer.model.dailymotionminer.DailymotionVideoList;
 import aiss.dailymotionminer.model.videominer.Channel;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
