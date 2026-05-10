@@ -1,10 +1,12 @@
 package aiss.dailymotionminer.service;
 
+import aiss.dailymotionminer.exception.ChannelNotFoundException;
 import aiss.dailymotionminer.model.dailymotionminer.*;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
@@ -14,40 +16,16 @@ public class DailymotionService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private String cachedToken = null;
-
-    // ── TOKEN ────────────────────────────────────────────────────────────────
-
-    private String getAccessToken() {
-        if (cachedToken != null) return cachedToken;
-
-        String url = "https://api.dailymotion.com/oauth/token";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "client_credentials");
-        body.add("client_id", "6f92bb92e97a86877c38");       // ← pon tu client_id
-        body.add("client_secret", "32edf840e6e95ea37aa5a5e986886f628dc123e4"); // ← pon tu client_secret
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
-
-        Map<?, ?> response = restTemplate.postForObject(url, request, Map.class);
-
-        if (response != null && response.get("access_token") != null) {
-            cachedToken = (String) response.get("access_token");
-        }
-
-        return cachedToken;
-    }
-
     // ── CHANNEL ──────────────────────────────────────────────────────────────
 
-    public DailymotionChannel getChannel(String userId) {
-        String url = "https://api.dailymotion.com/user/" + userId
+    public DailymotionChannel getChannel(String channelId) {
+        String url = "https://api.dailymotion.com/user/" + channelId
                 + "?fields=id,screenname,description,created_time,avatar_240_url";
-        return restTemplate.getForObject(url, DailymotionChannel.class);
+        try{
+            return restTemplate.getForObject(url, DailymotionChannel.class);
+        } catch (HttpClientErrorException e) {
+            throw new ChannelNotFoundException(channelId);
+        }
     }
 
     // ── VIDEO ────────────────────────────────────────────────────────────────
@@ -70,18 +48,10 @@ public class DailymotionService {
 
     public DailymotionCaptionResponse getCaptions(String videoId) {
         try {
-            String token = getAccessToken();
             String url = "https://api.dailymotion.com/video/" + videoId
                     + "/subtitles?fields=id,url,language";
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(token);
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<DailymotionCaptionResponse> response = restTemplate.exchange(
-                    url, HttpMethod.GET, entity, DailymotionCaptionResponse.class
-            );
-            return response.getBody();
+            return restTemplate.getForObject(url, DailymotionCaptionResponse.class);
 
         } catch (Exception e) {
             System.err.println("Error subtítulos para vídeo " + videoId + ": " + e.getMessage());

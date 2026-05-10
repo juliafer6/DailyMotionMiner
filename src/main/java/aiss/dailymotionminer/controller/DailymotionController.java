@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.*;
 public class DailymotionController {
 
     @Autowired
-    DailymotionService dailymotionService;
-
-    @Autowired
     VideoMinerService videoMinerService;
 
     @Autowired
