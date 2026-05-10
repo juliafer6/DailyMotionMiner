@@ -19,18 +19,20 @@ public class Transformer {
     DailymotionService service;
 
     private String convertirFecha(long unixTimestamp) {
-        return Instant.ofEpochSecond(unixTimestamp)
+        return Instant.ofEpochSecond(unixTimestamp) // los ajusta a zona horaria local
                 .atZone(ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }
     public Channel buildChannel(String userId, Integer maxVideos, Integer maxComments) {
+        // Llama a service para descargar el canal crudo
         DailymotionChannel dmChannel = service.getChannel(userId);
-        if (dmChannel == null) return null;
+        if (dmChannel == null) return null; // si no existe, aborta
 
+        // Crea la caja vacia de videominer
         Channel channel = new Channel();
         channel.setId(dmChannel.getId());
 
-        // CORRECCIÓN: Usamos getScreenName() que es como está en tu modelo de Channel
+        // Empieza a rellenar la caja traduciendo los datos
         channel.setName(dmChannel.getScreenName());
         channel.setDescription(dmChannel.getDescription());
         channel.setCreatedTime(dmChannel.getCreatedTime() != null ? convertirFecha(dmChannel.getCreatedTime()) : null);
@@ -42,7 +44,9 @@ public class Transformer {
     }
 
     private List<Video> mapVideos(String userId, Integer maxVideos, DailymotionChannel dmChannel, Integer maxComments) {
+        // Pide la lista de videos crudosal Service (solo la pag 1, con un limite)
         DailymotionVideoList dmVideoList = service.getVideosFromUser(userId, maxVideos, 1);
+        // Prepara la lista vacia de videominer
         List<Video> videos = new ArrayList<>();
 
         if (dmVideoList != null && dmVideoList.getList() != null) {
@@ -50,37 +54,32 @@ public class Transformer {
                 videos.add(this.buildVideo(dmVideo, dmChannel, userId, maxComments));
             }
         }
-        return videos;
+        return videos; // Devuelve la lista de videos mapeada
     }
 
     private Video buildVideo(DailymotionVideo dmVideo, DailymotionChannel dmChannel, String userId, Integer maxComments){
+        // Crea el video limpio y le pone los datos basicos
         Video video = new Video();
         video.setId(dmVideo.getId());
         video.setName(dmVideo.getTitle());
         video.setDescription(dmVideo.getDescription());
         video.setReleaseTime(dmVideo.getCreatedTime() != null ? convertirFecha(dmVideo.getCreatedTime()) : null);
 
-        // --- MAPEO DEL AUTOR (User) ---
+        // MAPEO DEL AUTOR (User)
         User author = new User();
         // Usamos Math.abs para asegurar que el ID sea positivo
         author.setId((long) Math.abs(userId.hashCode()));
-
-        // CORRECCIÓN: Usamos getScreenName() aquí también
         author.setName(dmChannel.getScreenName());
         author.setUser_link("https://www.dailymotion.com/" + userId);
-
-        // ARREGLO PICTURE_LINK: Ahora el método getPictureLink() funcionará
-        // porque ya lo añadimos a la clase DailymotionChannel
         author.setPicture_link(dmChannel.getPictureLink());
-
         video.setAuthor(author);
 
-        // --- MAPEO DE COMENTARIOS (Usando Tags) ---
+        // MAPEO DE COMENTARIOS (Usando Tags)
         List<Comment> comments = new ArrayList<>();
         if (dmVideo.getTags() != null) {
             int contador = 0;
             for (String tag : dmVideo.getTags()) {
-                if (contador >= maxComments) break;
+                if (contador >= maxComments) break; // Si llegamos al limite, paramos
 
                 Comment comment = new Comment();
                 comment.setId(dmVideo.getId() + "-tag-" + contador);
@@ -93,8 +92,9 @@ public class Transformer {
         }
         video.setComments(comments);
 
-        // --- ARREGLO CAPTIONS: Llamada al servicio externo ---
+        // MAPEO SUBTITULOS (Captions)
         List<Caption> captions = new ArrayList<>();
+        // Llamada a la API
         DailymotionCaptionResponse dmCaptions = service.getCaptions(dmVideo.getId());
 
         if (dmCaptions != null && dmCaptions.getList() != null) {
