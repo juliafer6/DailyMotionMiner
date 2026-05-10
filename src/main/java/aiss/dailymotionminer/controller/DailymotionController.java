@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/dailymotionminer/channels")
+@RequestMapping("/dailymotionminer/channel")
 public class DailymotionController {
 
     @Autowired
